@@ -1,0 +1,64 @@
+import tweepy
+import math
+from collections import Counter
+
+# Credenciales de la API (debes rellenarlas con tus valores)
+API_KEY = '1fraKUWwmW0lsvqg3Lent2fTy'
+API_SECRET_KEY = 'MjDRFYjo1Mjr0Oyl9OmYl1iwfF4Eg6YBtvsqdpZmM4jpNl2XGg'
+ACCESS_TOKEN = '876950793081032704-gPZGUqNf25s3OdgKyBArgAvEanGBzlY'
+ACCESS_TOKEN_SECRET = 'GguZZbUKWLwRoCHHZG5fqVK3ESyoYQ3KPtlPdJhNwuoy2'
+BEARER_TOKEN = r'AAAAAAAAAAAAAAAAAAAAADPexAEAAAAAQXA%2FGxVShA3nYXLGYms3EfMTW8w%3DbJ4E51mK6Eoh8iMmjRvSYN56xOQiZ9OB1w0Ueq6E1ETwMWZBFF'  # Necesario para la API v2
+
+
+# Autenticación con la API v2
+client = tweepy.Client(bearer_token=BEARER_TOKEN)
+
+def get_followers_followers_count():
+    """
+    Obtiene los seguidores de la cuenta autenticada y la cantidad de seguidores
+    que tiene cada uno. Devuelve una lista de cuentas de seguidores.
+    """
+    user_id = client.get_me().data.id  # Obtiene el ID del usuario autenticado
+    followers_counts = []
+
+    print("Obteniendo los seguidores y su cantidad de seguidores...")
+    for page in tweepy.Paginator(client.get_users_followers, id=user_id, user_fields=["public_metrics"], max_results=1000):
+        if page.data:
+            for user in page.data:
+                followers_count = user.public_metrics["followers_count"]
+                followers_counts.append(followers_count)
+                print(f"{user.username} tiene {followers_count} seguidores.")
+    
+    return followers_counts
+
+def apply_benford_law(numbers):
+    """
+    Aplica la Ley de Benford a una lista de números.
+    Devuelve una distribución observada y esperada de dígitos iniciales.
+    """
+    first_digits = [int(str(num)[0]) for num in numbers if num > 0]
+    digit_counts = Counter(first_digits)
+    total_counts = sum(digit_counts.values())
+
+    # Calcula la distribución observada y esperada
+    observed = {digit: count / total_counts for digit, count in digit_counts.items()}
+    expected = {digit: math.log10(1 + 1 / digit) for digit in range(1, 10)}
+
+    print("\nDistribución observada vs esperada:")
+    for digit in range(1, 10):
+        print(f"Dígito {digit}: Observado = {observed.get(digit, 0):.4f}, Esperado = {expected[digit]:.4f}")
+    
+    return observed, expected
+
+if __name__ == "__main__":
+    try:
+        # Obtiene los seguidores y su cantidad de seguidores
+        followers_counts = get_followers_followers_count()
+
+        # Aplica la Ley de Benford
+        observed, expected = apply_benford_law(followers_counts)
+
+    except tweepy.TweepyException as e:
+        print(f"Error al interactuar con la API de Twitter: {e}")
+    except Exception as e:
+        print(f"Error inesperado: {e}")
